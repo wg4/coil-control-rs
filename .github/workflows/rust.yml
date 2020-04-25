@@ -13,6 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install target
+      run: rustup target add thumbv7em-none-eabihf
     - name: Build
       run: cargo build --verbose
     - name: Run tests
