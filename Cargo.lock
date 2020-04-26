@@ -252,8 +252,7 @@ dependencies = [
 [[package]]
 name = "stm32f3xx-hal"
 version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa6bd9e366b5bea8a6c84d83facb865ed0fc00b0a64ad4d972c5540e1783e46a"
+source = "git+https://github.com/strom-und-spiele/stm32f3xx-hal?branch=adc#eed1c09c6e566a8b517f2396aa25ceacf3f1a5a9"
 dependencies = [
  "bare-metal",
  "cast",
