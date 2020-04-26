@@ -23,4 +23,5 @@ about ViralballTrack.
     # ArchLinux
     sudo pacman -S arm-none-eabi-gdb openocd
     ```
- 2. Run `cargo run`
+ 2. Run `openocd -f openocd.cfg` in a separate terminal
+ 3. Run `cargo run`
