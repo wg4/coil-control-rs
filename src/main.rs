@@ -8,8 +8,9 @@ use cortex_m_rt::entry;
 use stm32f3_discovery::stm32f3xx_hal::delay::Delay;
 use stm32f3_discovery::stm32f3xx_hal::{adc, stm32 ,prelude::*};
 
+use stm32f3_discovery::button::UserButton;
 use stm32f3_discovery::leds::Leds;
-use stm32f3_discovery::switch_hal::{OutputSwitch, ToggleableOutputSwitch};
+use stm32f3_discovery::switch_hal::{InputSwitch, OutputSwitch, ToggleableOutputSwitch};
 
 
 #[entry]
@@ -53,11 +54,40 @@ fn main() -> ! {
     // Set up pin PA0 as analog pin.
     // This pin is connected to the user button on the stm32f3discovery board.
     let mut gpio_a = device_periphs.GPIOA.split(&mut reset_and_clock_control.ahb);
-    let mut adc1_in1_pin = gpio_a.pa1.into_analog(&mut gpio_a.moder, &mut gpio_a.pupdr);
+    //gpio_a = ();
+    //let mut adc1_in1_pin = gpio_a.pa1.into_analog(&mut gpio_a.moder, &mut gpio_a.pupdr);
 
+    let button = UserButton::new(gpio_a.pa0);
+    let mut enable_coil = gpio_a.pa3.into_push_pull_output(&mut gpio_a.moder, &mut gpio_a.otyper);
+
+    enable_coil.set_low().ok();
+
+    let mut old_button_state = false;
     loop {
-        let adc1_in1_data: u16 = adc1.read(&mut adc1_in1_pin).expect("Error reading adc1.");
+        //let adc1_in1_data: u16 = adc1.read(&mut adc1_in1_pin).expect("Error reading adc1.");
 
+        match button.is_active() {
+            Ok(true) => {
+                if old_button_state == false {
+                    old_button_state = true;
+                    leds.ld3.on().ok();
+                    enable_coil.set_high().ok();
+                    delay.delay_ms(200u16);
+                    enable_coil.set_low().ok();
+                }
+            }
+            Ok(false) => {
+                old_button_state = false;
+            }
+            Err(_) => {
+                leds.ld4.on().ok();
+                delay.delay_ms(200u16);
+            }
+        }
+        leds.ld4.off().ok();
+        leds.ld3.off().ok();
+
+        /*
         if adc1_in1_data > 50 {
             leds.ld3.toggle().ok();
             delay.delay_ms(100u16);
@@ -72,5 +102,6 @@ fn main() -> ! {
             leds.ld4.off().ok();
             delay.delay_ms(100u16);
         }
+        */
     }
 }
