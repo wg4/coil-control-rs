@@ -54,8 +54,7 @@ fn main() -> ! {
     // Set up pin PA0 as analog pin.
     // This pin is connected to the user button on the stm32f3discovery board.
     let mut gpio_a = device_periphs.GPIOA.split(&mut reset_and_clock_control.ahb);
-    //gpio_a = ();
-    //let mut adc1_in1_pin = gpio_a.pa1.into_analog(&mut gpio_a.moder, &mut gpio_a.pupdr);
+    let mut adc1_in1_pin = gpio_a.pa1.into_analog(&mut gpio_a.moder, &mut gpio_a.pupdr);
 
     let button = UserButton::new(gpio_a.pa0);
     let mut enable_coil = gpio_a.pa3.into_push_pull_output(&mut gpio_a.moder, &mut gpio_a.otyper);
@@ -64,20 +63,28 @@ fn main() -> ! {
 
     let mut old_button_state = false;
     loop {
-        //let adc1_in1_data: u16 = adc1.read(&mut adc1_in1_pin).expect("Error reading adc1.");
+        let adc1_in1_data: Result<u16, _> = adc1.read(&mut adc1_in1_pin);
 
-        match button.is_active() {
-            Ok(true) => {
+        //match button.is_active() {
+        match adc1_in1_data {
+            Ok(x) if x > 50 => {
                 if old_button_state == false {
                     old_button_state = true;
+                    delay.delay_ms(100u16);
                     leds.ld3.on().ok();
                     enable_coil.set_high().ok();
                     delay.delay_ms(200u16);
                     enable_coil.set_low().ok();
                 }
             }
-            Ok(false) => {
-                old_button_state = false;
+            Ok(_) => {
+                if old_button_state {
+                    old_button_state = false;
+                    // off for at least 1 second to avoid overheating the coil
+                    leds.ld6.on().ok();
+                    delay.delay_ms(1000u16);
+                    leds.ld6.off().ok();
+                }
             }
             Err(_) => {
                 leds.ld4.on().ok();
