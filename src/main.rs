@@ -58,7 +58,7 @@ fn main() -> ! {
     loop {
         let adc1_in1_data: u16 = adc1.read(&mut adc1_in1_pin).expect("Error reading adc1.");
 
-        if adc1_in1_data > 200 {
+        if adc1_in1_data > 50 {
             leds.ld3.toggle().ok();
             delay.delay_ms(100u16);
             leds.ld3.toggle().ok();
