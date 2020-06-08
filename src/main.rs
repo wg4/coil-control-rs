@@ -13,8 +13,16 @@ use stm32f3_discovery::leds::Leds;
 use stm32f3_discovery::switch_hal::{InputSwitch, OutputSwitch, ToggleableOutputSwitch};
 
 
+use debouncr::{Debouncer, debounce_12, Edge, Repeat12};
+
+use cortex_m_semihosting::hio;
+use core::fmt::Write;
+
+
 #[entry]
 fn main() -> ! {
+
+    let mut stdout = hio::hstdout().unwrap();
 
     let mut device_periphs = stm32::Peripherals::take().unwrap();
     let mut reset_and_clock_control = device_periphs.RCC.constrain();
@@ -61,23 +69,45 @@ fn main() -> ! {
 
     enable_coil.set_low().ok();
 
+    let mut debouncer = debounce_12();
+    let mut coil_on_time = 10u16;
     let mut old_button_state = false;
     loop {
-        let adc1_in1_data: Result<u16, _> = adc1.read(&mut adc1_in1_pin);
+        let mut adc_sum = 0u16;
+        for _ in 0..4 {
+            let adc1_in1_data: u16 = adc1.read(&mut adc1_in1_pin).unwrap_or(0);
+            //write!(stdout, "{} ", adc1_in1_data.unwrap()).unwrap();
+            adc_sum += adc1_in1_data;
+        }
 
-        //match button.is_active() {
-        match adc1_in1_data {
-            Ok(x) if x > 50 => {
-                if old_button_state == false {
-                    old_button_state = true;
-                    delay.delay_ms(100u16);
-                    leds.ld3.on().ok();
-                    enable_coil.set_high().ok();
-                    delay.delay_ms(200u16);
-                    enable_coil.set_low().ok();
+        match button.is_active() {
+            Ok(value) => {
+                let edge = debouncer.update(value);
+                if edge == Some(Edge::Rising) {
+                    coil_on_time += 5;
+                    writeln!(stdout, "{}", coil_on_time).unwrap();
                 }
             }
-            Ok(_) => {
+            Err(_) => {
+                leds.ld4.on().ok();
+                delay.delay_ms(200u16);
+            }
+        }
+
+        match adc_sum {
+            x if x > 200 => {
+                if old_button_state == false {
+                    old_button_state = true;
+                    //delay.delay_ms(200u16);
+                    leds.ld3.on().ok();
+                    enable_coil.set_high().ok();
+                    delay.delay_ms(coil_on_time);
+                    //delay.delay_ms(150u16);
+                    enable_coil.set_low().ok();
+                }
+                writeln!(stdout, "{}", adc_sum).unwrap();
+            }
+            _ => {
                 if old_button_state {
                     old_button_state = false;
                     // off for at least 1 second to avoid overheating the coil
@@ -85,10 +115,6 @@ fn main() -> ! {
                     delay.delay_ms(1000u16);
                     leds.ld6.off().ok();
                 }
-            }
-            Err(_) => {
-                leds.ld4.on().ok();
-                delay.delay_ms(200u16);
             }
         }
         leds.ld4.off().ok();

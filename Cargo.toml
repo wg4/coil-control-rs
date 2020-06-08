@@ -11,6 +11,8 @@ stm32f3-discovery = "0.4.0"
 cortex-m-rt = "0.6.12"
 cortex-m = "0.6.2"
 panic-halt = "0.2.0"
+debouncr = "0.1.2"
+cortex-m-semihosting = "0.3"
 
 [patch.crates-io]
 stm32f3xx-hal = { git = 'https://github.com/strom-und-spiele/stm32f3xx-hal', branch = 'adc' }
